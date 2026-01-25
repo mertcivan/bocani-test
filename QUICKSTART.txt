@@ -1,0 +1,112 @@
+╔═══════════════════════════════════════════════════════════════╗
+║           BOCCONI PREP MASTER - QUICK START GUIDE            ║
+╚═══════════════════════════════════════════════════════════════╝
+
+📦 STEP 1: INSTALL DEPENDENCIES
+────────────────────────────────────────────────────────────────
+Open your terminal in this folder and run:
+
+    npm install
+
+This will install all required packages (~5 minutes)
+
+
+🚀 STEP 2: START DEVELOPMENT SERVER
+────────────────────────────────────────────────────────────────
+Run:
+
+    npm run dev
+
+Then open your browser to:
+
+    http://localhost:3000
+
+
+✅ STEP 3: TEST THE APPLICATION
+────────────────────────────────────────────────────────────────
+1. Click "Practice Mode" → Select filters → Start practicing
+2. Click "Mock Exam" → Start a timed 75-minute exam
+3. Complete a session to see Results and Dashboard
+
+
+📝 CUSTOMIZATION
+────────────────────────────────────────────────────────────────
+→ Add Questions:   Edit data/questions.csv
+→ Add Images:      Place in public/images/questions/
+→ Change Colors:   Edit tailwind.config.ts
+→ Change Branding: Edit app/layout.tsx and app/page.tsx
+
+
+📚 DOCUMENTATION
+────────────────────────────────────────────────────────────────
+→ README.md              : Project overview and features
+→ SETUP.md               : Detailed setup instructions
+→ FOLDER_STRUCTURE.md    : Complete file reference
+
+
+🛠 USEFUL COMMANDS
+────────────────────────────────────────────────────────────────
+npm run dev              : Start development server
+npm run build            : Build for production
+npm start                : Start production server
+npm run lint             : Run ESLint
+
+
+⚡ QUICK TIPS
+────────────────────────────────────────────────────────────────
+• CSV file must have exact headers (check data/questions.csv)
+• Use $...$ for LaTeX math in questions/solutions
+• Set Mode to "Practice" or "Mock" for each question
+• Images are optional - leave Image_URL empty if unused
+• Sessions auto-save to browser localStorage
+
+
+🎯 CSV FORMAT EXAMPLE
+────────────────────────────────────────────────────────────────
+ID,Category,SubCategory,Difficulty,Mode,Question_Text,Option_A,...
+1,Math,Algebra,Easy,Practice,"Solve: $x+5=10$",3,4,5,6,7,C,"...",
+
+
+📊 PROJECT STRUCTURE
+────────────────────────────────────────────────────────────────
+app/                → Next.js pages (practice, mock-exam, etc.)
+components/         → React components (QuestionCard, Timer)
+lib/                → Utilities (CSV parser, math renderer)
+types/              → TypeScript definitions
+data/               → questions.csv database
+public/images/      → Question images
+
+
+🐛 TROUBLESHOOTING
+────────────────────────────────────────────────────────────────
+Questions not loading?
+  → Check data/questions.csv exists and has correct format
+
+Math not rendering?
+  → Verify LaTeX syntax: $x^2$ for inline, $$...$$$ for display
+
+Images not showing?
+  → Ensure images are in public/images/questions/
+  → Check filename matches CSV exactly
+
+
+🎓 NEXT STEPS
+────────────────────────────────────────────────────────────────
+1. Review the sample questions in data/questions.csv
+2. Add your own questions following the same format
+3. Customize colors and branding
+4. Test on different devices
+5. Build for production: npm run build
+
+
+📧 NEED MORE HELP?
+────────────────────────────────────────────────────────────────
+Check the detailed documentation:
+  → SETUP.md for complete setup guide
+  → README.md for feature documentation
+  → FOLDER_STRUCTURE.md for file reference
+
+
+════════════════════════════════════════════════════════════════
+                    Happy Teaching! 🚀
+════════════════════════════════════════════════════════════════
