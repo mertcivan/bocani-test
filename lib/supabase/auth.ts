@@ -1,13 +1,22 @@
-import { supabase } from './client';
-import type { User } from '@supabase/supabase-js';
+import { getSupabase, Database } from './client';
+import type { User, SupabaseClient } from '@supabase/supabase-js';
 
 export interface AuthUser extends User {
   subscription_type?: 'free' | 'premium';
   points?: number;
 }
 
+function getSupabaseOrThrow(): SupabaseClient<Database> {
+  const supabase = getSupabase();
+  if (!supabase) {
+    throw new Error('Supabase client not available. Check your environment variables.');
+  }
+  return supabase;
+}
+
 // Sign up with email and password
 export async function signUpWithEmail(email: string, password: string, fullName: string) {
+  const supabase = getSupabaseOrThrow();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -25,6 +34,7 @@ export async function signUpWithEmail(email: string, password: string, fullName:
 
 // Sign in with email and password
 export async function signInWithEmail(email: string, password: string) {
+  const supabase = getSupabaseOrThrow();
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -36,6 +46,7 @@ export async function signInWithEmail(email: string, password: string) {
 
 // Sign in with Google
 export async function signInWithGoogle() {
+  const supabase = getSupabaseOrThrow();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -49,12 +60,16 @@ export async function signInWithGoogle() {
 
 // Sign out
 export async function signOut() {
+  const supabase = getSupabaseOrThrow();
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
 
 // Get current user
 export async function getCurrentUser(): Promise<AuthUser | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return null;
@@ -75,6 +90,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
 // Get user profile
 export async function getUserProfile(userId: string) {
+  const supabase = getSupabaseOrThrow();
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -91,6 +107,7 @@ export async function updateUserProfile(userId: string, updates: {
   subscription_type?: 'free' | 'premium';
   points?: number;
 }) {
+  const supabase = getSupabaseOrThrow();
   const { data, error } = await supabase
     .from('profiles')
     .update(updates)
@@ -110,6 +127,7 @@ export async function hasPremiuSubscription(userId: string): Promise<boolean> {
 
 // Reset password
 export async function resetPassword(email: string) {
+  const supabase = getSupabaseOrThrow();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/auth/reset-password`,
   });
@@ -119,6 +137,7 @@ export async function resetPassword(email: string) {
 
 // Update password
 export async function updatePassword(newPassword: string) {
+  const supabase = getSupabaseOrThrow();
   const { error } = await supabase.auth.updateUser({
     password: newPassword,
   });

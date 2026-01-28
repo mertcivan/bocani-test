@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { getSupabase } from '@/lib/supabase/client';
 import { AuthUser, getCurrentUser } from '@/lib/supabase/auth';
 
 interface AuthContextType {
@@ -33,6 +33,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     let isMounted = true;
 
     // Get initial session
@@ -91,7 +97,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    const supabase = getSupabase();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     setUser(null);
   };
 

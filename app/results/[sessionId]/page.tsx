@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Question, UserAnswer, ExamResults } from '@/types';
-import { loadSessionFromLocalStorage, calculateResults } from '@/lib/examUtils'; // formatTime silindi (kullanılmıyor)
-import { getExamById } from '@/lib/supabase/stats'; // UserStats silindi (kullanılmıyor)
+import { loadSessionFromLocalStorage, calculateResults, formatTime } from '@/lib/examUtils';
+import { getExamById } from '@/lib/supabase/stats';
 import { QuestionCard } from '@/components/QuestionCard';
 import { ArrowLeft, CheckCircle2, XCircle, Award, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
@@ -22,7 +22,11 @@ export default function ResultsPage() {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    // Wait for sessionId to be available (can be undefined during hydration)
+    if (!sessionId) return;
+
     const loadResults = async () => {
+      // First try localStorage
       const session = loadSessionFromLocalStorage(sessionId);
       if (session) {
         setQuestions(session.questions);
@@ -33,28 +37,30 @@ export default function ResultsPage() {
         return;
       }
 
+      // If not in localStorage, try Supabase
       try {
         const examData = await getExamById(sessionId);
         if (examData) {
           const examQuestions = examData.questions as Question[];
           setQuestions(examQuestions);
-          setMode(examData.exam_type as 'practice' | 'mock');
+          setMode(examData.exam_type);
 
+          // Reconstruct answers map from the stored data
           const answersMap = new Map<string, UserAnswer>();
           examQuestions.forEach((q) => {
             const isWrong = examData.wrong_answers?.includes(q.id);
-            
-            // DÜZELTME: -1 yerine boş string "" veya "-1" kullanarak tip hatasını gideriyoruz
+            // We don't have the exact selected answer stored, but we can mark correctness
             answersMap.set(q.id, {
               questionId: q.id,
-              selectedAnswer: isWrong ? "" : q.correctAnswer, 
+              selectedAnswer: isWrong ? '' : q.correctAnswer, // If wrong, we don't know exactly what was selected
               isCorrect: !isWrong,
               isFlagged: false,
-              timeSpent: 0,
+              timeTaken: 0,
             });
           });
           setAnswers(answersMap);
 
+          // Use the stored results
           setResults({
             totalQuestions: examData.total_questions,
             correctAnswers: examData.correct_answers,
@@ -69,13 +75,14 @@ export default function ResultsPage() {
       } catch (error) {
         console.error('Error loading exam from Supabase:', error);
       }
+
+      // If we get here, session wasn't found anywhere
       setNotFound(true);
     };
 
     loadResults();
   }, [sessionId]);
 
-  // UI Render kısımları aynı kalıyor...
   if (notFound) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -151,19 +158,25 @@ export default function ResultsPage() {
   }
 
   const scorePercentage = results.score;
-  const gradeInfo = (() => {
-    if (scorePercentage >= 90) return { grade: 'A+', color: 'text-green-600', bg: 'bg-green-100' };
-    if (scorePercentage >= 80) return { grade: 'A', color: 'text-green-600', bg: 'bg-green-100' };
-    if (scorePercentage >= 70) return { grade: 'B', color: 'text-blue-600', bg: 'bg-blue-100' };
-    if (scorePercentage >= 60) return { grade: 'C', color: 'text-yellow-600', bg: 'bg-yellow-100' };
+  const getGrade = (score: number) => {
+    if (score >= 90) return { grade: 'A+', color: 'text-green-600', bg: 'bg-green-100' };
+    if (score >= 80) return { grade: 'A', color: 'text-green-600', bg: 'bg-green-100' };
+    if (score >= 70) return { grade: 'B', color: 'text-blue-600', bg: 'bg-blue-100' };
+    if (score >= 60) return { grade: 'C', color: 'text-yellow-600', bg: 'bg-yellow-100' };
     return { grade: 'D', color: 'text-red-600', bg: 'bg-red-100' };
-  })();
+  };
+
+  const gradeInfo = getGrade(scorePercentage);
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <Link href="/" className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 mb-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 mb-4"
+          >
             <ArrowLeft className="w-5 h-5" />
             Back to Home
           </Link>
@@ -174,7 +187,9 @@ export default function ResultsPage() {
         </div>
       </header>
 
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Score Card */}
         <div className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl shadow-xl p-8 text-white mb-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="text-center md:text-left">
@@ -207,24 +222,33 @@ export default function ResultsPage() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
+          {/* Performance Breakdown */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center gap-3 mb-6">
               <TrendingUp className="w-6 h-6 text-primary-600" />
-              <h3 className="text-xl font-bold text-gray-900">Performance by SubCategory</h3>
+              <h3 className="text-xl font-bold text-gray-900">
+                Performance by SubCategory
+              </h3>
             </div>
             <div className="space-y-4">
               {Object.entries(results.breakdown).map(([category, stats]) => {
-                const percentage = stats.total > 0 ? (stats.correct / stats.total) * 100 : 0;
+                const percentage =
+                  stats.total > 0 ? (stats.correct / stats.total) * 100 : 0;
                 return (
                   <div key={category}>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700">{category}</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {category}
+                      </span>
                       <span className="text-sm text-gray-600">
                         {stats.correct}/{stats.total} ({Math.round(percentage)}%)
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-primary-600 h-2 rounded-full transition-all" style={{ width: `${percentage}%` }} />
+                      <div
+                        className="bg-primary-600 h-2 rounded-full transition-all"
+                        style={{ width: `${percentage}%` }}
+                      />
                     </div>
                   </div>
                 );
@@ -232,6 +256,7 @@ export default function ResultsPage() {
             </div>
           </div>
 
+          {/* Summary Stats */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-6">Summary</h3>
             <div className="space-y-4">
@@ -240,27 +265,36 @@ export default function ResultsPage() {
                   <CheckCircle2 className="w-6 h-6 text-green-600" />
                   <span className="font-medium text-gray-700">Correct Answers</span>
                 </div>
-                <span className="text-2xl font-bold text-green-600">{results.correctAnswers}</span>
+                <span className="text-2xl font-bold text-green-600">
+                  {results.correctAnswers}
+                </span>
               </div>
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <XCircle className="w-6 h-6 text-red-600" />
                   <span className="font-medium text-gray-700">Incorrect Answers</span>
                 </div>
-                <span className="text-2xl font-bold text-red-600">{results.incorrectAnswers}</span>
+                <span className="text-2xl font-bold text-red-600">
+                  {results.incorrectAnswers}
+                </span>
               </div>
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <span className="font-medium text-gray-700">Total Questions</span>
-                <span className="text-2xl font-bold text-gray-900">{results.totalQuestions}</span>
+                <span className="text-2xl font-bold text-gray-900">
+                  {results.totalQuestions}
+                </span>
               </div>
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <span className="font-medium text-gray-700">Accuracy</span>
-                <span className="text-2xl font-bold text-primary-600">{scorePercentage}%</span>
+                <span className="text-2xl font-bold text-primary-600">
+                  {scorePercentage}%
+                </span>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Action Buttons */}
         <div className="mt-8 flex flex-col sm:flex-row gap-4">
           <button
             onClick={() => {
