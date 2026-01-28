@@ -77,14 +77,14 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   // Fetch user profile
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('subscription_type, points')
     .eq('id', user.id)
     .single();
 
   return {
     ...user,
-    subscription_type: profile?.subscription_type || 'free',
-    points: profile?.points || 0,
+    subscription_type: (profile as { subscription_type?: 'free' | 'premium'; points?: number } | null)?.subscription_type || 'free',
+    points: (profile as { subscription_type?: 'free' | 'premium'; points?: number } | null)?.points || 0,
   } as AuthUser;
 }
 
