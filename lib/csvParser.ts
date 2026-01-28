@@ -43,7 +43,7 @@ export async function parseCSVContent(csvContent: string): Promise<Question[]> {
         }));
         resolve(questions);
       },
-      error: (error) => {
+      error: (error: Error) => {
         reject(error);
       },
     });
