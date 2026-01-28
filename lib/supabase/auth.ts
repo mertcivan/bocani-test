@@ -98,7 +98,7 @@ export async function getUserProfile(userId: string) {
     .single();
 
   if (error) throw error;
-  return data;
+  return data as Database['public']['Tables']['profiles']['Row'];
 }
 
 // Update user profile
@@ -108,21 +108,21 @@ export async function updateUserProfile(userId: string, updates: {
   points?: number;
 }) {
   const supabase = getSupabaseOrThrow();
-  const { data, error } = await supabase
-    .from('profiles')
+  const { data, error } = await (supabase
+    .from('profiles') as any)
     .update(updates)
     .eq('id', userId)
     .select()
     .single();
 
   if (error) throw error;
-  return data;
+  return data as Database['public']['Tables']['profiles']['Row'];
 }
 
 // Check if user has premium subscription
 export async function hasPremiuSubscription(userId: string): Promise<boolean> {
   const profile = await getUserProfile(userId);
-  return profile.subscription_type === 'premium';
+  return profile?.subscription_type === 'premium';
 }
 
 // Reset password
